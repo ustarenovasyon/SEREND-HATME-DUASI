@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
                             lessonIndex=li; partIndex=pi; hidden=false; screen="study"
                             scope.launch { dataStore.edit { it[intPreferencesKey("last_lesson")]=li; it[intPreferencesKey("last_part")]=pi } }
                         })
+                        "progress" -> ProgressScreen(completed, onBack={screen="home"})
                         "study" -> {
                             val lesson = lessons[lessonIndex]
                             val part = lesson.parts[partIndex]
@@ -68,7 +69,7 @@ class MainActivity : ComponentActivity() {
                             lessonIndex=lastLesson.coerceIn(0,lessons.lastIndex)
                             partIndex=lastPart.coerceIn(0,lessons[lessonIndex].parts.lastIndex)
                             screen="study";hidden=false
-                        },onProgress={screen="lessons"})
+                        },onProgress={screen="progress"})
                     }
                 }
             }
@@ -156,6 +157,38 @@ fun StudyScreen(title:String,part:HatmePart,isDone:Boolean,hidden:Boolean,onBack
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp),modifier=Modifier.fillMaxWidth()) {
             OutlinedButton(onClick=onPrev,modifier=Modifier.weight(1f)) { Text("← Önceki",color=emerald) }
             Button(onClick=onNext,colors=ButtonDefaults.buttonColors(containerColor=emerald),modifier=Modifier.weight(1f)) { Text("Sonraki →",color=cream) }
+        }
+    }
+}
+
+
+@Composable
+fun ProgressScreen(completed:Set<Int>,onBack:()->Unit) {
+    val totalDone=completed.size
+    Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment=Alignment.CenterVertically) {
+            Text("‹",fontSize=32.sp,color=emerald,modifier=Modifier.clickable(onClick=onBack).padding(horizontal=12.dp))
+            Text("Ezber ilerlemem",fontSize=24.sp,color=emerald,fontWeight=FontWeight.Bold)
+        }
+        Card(colors=CardDefaults.cardColors(containerColor=emerald),shape=RoundedCornerShape(20.dp),modifier=Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(20.dp),horizontalAlignment=Alignment.Center,verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text("GENEL TAMAMLANMA",color=cream,letterSpacing=1.5.sp)
+                Text("${totalDone * 100 / 30}%",fontSize=48.sp,color=gold,fontWeight=FontWeight.Bold)
+                Text("$totalDone / 30 ezber parçası",color=cream)
+                LinearProgressIndicator(progress={totalDone/30f},color=gold,trackColor=Color(0xFF426B5E),modifier=Modifier.fillMaxWidth().height(8.dp))
+            }
+        }
+        LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            itemsIndexed(lessons) { index, lesson ->
+                val count=lesson.parts.count { completed.contains(it.number) }
+                Card(colors=CardDefaults.cardColors(containerColor=Color.White),modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp)) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text("${index+1}. ${lesson.title}",fontWeight=FontWeight.Bold,color=emerald)
+                        Text("$count / ${lesson.parts.size} tamamlandı",color=ink.copy(alpha=.75f),fontSize=13.sp)
+                        LinearProgressIndicator(progress={count.toFloat()/lesson.parts.size},color=emerald,trackColor=cream,modifier=Modifier.fillMaxWidth().padding(top=7.dp))
+                    }
+                }
+            }
         }
     }
 }
